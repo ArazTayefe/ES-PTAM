@@ -29,7 +29,7 @@ repositories:
     version: master
   cnpy:
     type: git
-    url: git@github.com:uzh-rpg/cnpy_catkin.git
+    url: https://github.com/uzh-rpg/cnpy_catkin.git
     version: master
   vicon:
     type: git
@@ -37,10 +37,10 @@ repositories:
     version: master
   cmake_external_project_catkin:
     type: git
-    url: git@github.com:zurich-eye/cmake_external_project_catkin.git
+    url: https://github.com/zurich-eye/cmake_external_project_catkin.git
     version: master
   minkindr_ros:
     type: git
-    url: git@github.com:ethz-asl/minkindr_ros.git
+    url: https://github.com/ethz-asl/minkindr_ros.git
     version: master
 
