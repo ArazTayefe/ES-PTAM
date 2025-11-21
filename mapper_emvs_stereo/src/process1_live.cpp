@@ -53,6 +53,18 @@ void process_1(
   int nloops = 100;
 #endif
 
+
+  // >>> ADDED: artificial delay on LEFT camera events (events0)
+  const double artificial_delay_sec = 0.016;  // e.g. 5 ms delay
+
+  // Make a copy of the left camera events so we can modify timestamps
+  std::vector<dvs_msgs::Event> events0_delayed = events0;
+  for (auto &e : events0_delayed)
+  {
+      e.ts.fromSec(e.ts.toSec() + artificial_delay_sec);
+  }
+  // <<< END ADDED
+
   // 1. Back-project events into the DSI
   {
     LOG(INFO) << "Setting DSI reference at specific timestamp: " << ts;
@@ -68,13 +80,14 @@ void process_1(
     T_w_rv = T_w_l * baselineTransform;
     T_rv_w = T_w_rv.inverse();
 
-    // Left camera: back-project events into the DSI
+      // Left camera: back-project events into the DSI
     LOG(INFO) << "Computing DSI for first camera";
     std::chrono::high_resolution_clock::time_point t_start_dsi = std::chrono::high_resolution_clock::now();
 #ifdef TIMING_LOOP
     for(int i=1; i<=nloops; i++){
 #endif
-        mapper0.evaluateDSI(events0, tf_, world_frame_id, left_cam_frame_id,  T_rv_w);
+        // Use delayed events for the left camera
+        mapper0.evaluateDSI(events0_delayed, tf_, world_frame_id, left_cam_frame_id, T_rv_w);
 #ifdef TIMING_LOOP
       }
 #endif
