@@ -55,7 +55,7 @@ void process_1(
 
 
   // >>> ADDED: artificial delay on LEFT camera events (events0)
-  const double artificial_delay_sec = 0.016;  // e.g. 5 ms delay
+  const double artificial_delay_sec = 0.017;  // e.g. 17 ms delay
 
   // Make a copy of the left camera events so we can modify timestamps
   std::vector<dvs_msgs::Event> events0_delayed = events0;
@@ -202,6 +202,45 @@ void process_1(
             LOG(INFO) << "Improper fusion method selected";
             return;
           }
+      }
+
+      // --- NEW: write DSI grids to disk as .npy ---
+      // out_path is e.g. "/data/ESPTAM_OUT" from the config
+      try
+      {
+          static int dsi_frame_id = 0;
+
+          std::stringstream ss_fused;
+          ss_fused << out_path << "/dsi_fused_"
+                  << std::setw(4) << std::setfill('0') << dsi_frame_id
+                  << ".npy";
+
+          mapper_fused.dsi_.writeGridNpy(ss_fused.str().c_str());
+          LOG(INFO) << "Saved fused DSI to " << ss_fused.str();
+
+          // Optional: save individual camera DSIs too
+          std::stringstream ss0, ss1;
+          ss0 << out_path << "/dsi_cam0_"
+              << std::setw(4) << std::setfill('0') << dsi_frame_id << ".npy";
+          ss1 << out_path << "/dsi_cam1_"
+              << std::setw(4) << std::setfill('0') << dsi_frame_id << ".npy";
+
+          mapper0.dsi_.writeGridNpy(ss0.str().c_str());
+          mapper1.dsi_.writeGridNpy(ss1.str().c_str());
+
+          if (events2.size() > 0)
+          {
+              std::stringstream ss2;
+              ss2 << out_path << "/dsi_cam2_"
+                  << std::setw(4) << std::setfill('0') << dsi_frame_id << ".npy";
+              mapper2.dsi_.writeGridNpy(ss2.str().c_str());
+          }
+
+          dsi_frame_id++;
+      }
+      catch (const std::exception &e)
+      {
+          LOG(WARNING) << "Exception while saving DSI grids: " << e.what();
       }
 
     // Write the DSI (3D voxel grid) to disk
