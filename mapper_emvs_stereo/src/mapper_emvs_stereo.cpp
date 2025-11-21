@@ -23,6 +23,12 @@
 #include <opencv2/photo.hpp> // inpaint
 #include <opencv2/calib3d.hpp>
 
+// >>> ADDED: for saving depth maps as PNG
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/imgproc.hpp>
+#include <sstream>
+#include <iomanip>
+
 //#define TIMING_LOOP
 
 namespace EMVS {
@@ -465,7 +471,82 @@ void MapperEMVS::getDepthMapFromDSI(cv::Mat& depth_map, cv::Mat &confidence_map,
     // Convert depth indices to depth values
     convertDepthIndicesToValues(depth_cell_indices_filtered, depth_map);
     convertDepthIndicesToValues(depth_cell_indices_inpainted, depth_map_dense);
+
+    // >>> UPDATED: save dense depth map as high-res PNG with white background
+    try
+    {
+        static int depth_frame_id = 0;
+        const std::string depth_out_dir = "/data/ESPTAM_OUT";
+
+        // 1) Copy depth map and zero out invalid pixels (for min/max)
+        cv::Mat depth_for_norm = depth_map_dense.clone();
+
+        for (int y = 0; y < depth_for_norm.rows; ++y)
+        {
+            for (int x = 0; x < depth_for_norm.cols; ++x)
+            {
+                if (mask.at<uchar>(y, x) == 0)
+                {
+                    depth_for_norm.at<float>(y, x) = 0.0f;
+                }
+            }
+        }
+
+        // 2) Normalize to 0–255
+        cv::Mat depth_vis;
+        double min_val, max_val;
+        cv::minMaxLoc(depth_for_norm, &min_val, &max_val, nullptr, nullptr);
+
+        if (max_val > min_val)
+        {
+            cv::normalize(depth_for_norm, depth_vis, 0.0, 255.0, cv::NORM_MINMAX);
+        }
+        else
+        {
+            depth_vis = cv::Mat::zeros(depth_for_norm.size(), CV_8U);
+        }
+
+        depth_vis.convertTo(depth_vis, CV_8U);
+
+        // 3) Set background (invalid pixels) to WHITE instead of black
+        for (int y = 0; y < depth_vis.rows; ++y)
+        {
+            for (int x = 0; x < depth_vis.cols; ++x)
+            {
+                if (mask.at<uchar>(y, x) == 0)
+                {
+                    depth_vis.at<uchar>(y, x) = 255;   // white background
+                }
+            }
+        }
+
+        // 4) Optional: upscale the image to higher resolution
+        int scale_factor = 4;  // <-- increase to 3 or 4 if you want larger images
+        cv::Mat depth_up;
+        cv::resize(depth_vis, depth_up, cv::Size(), scale_factor, scale_factor,
+                cv::INTER_NEAREST);
+
+        // 5) Save to disk
+        std::stringstream ss;
+        ss << depth_out_dir << "/depth_"
+        << std::setw(4) << std::setfill('0') << depth_frame_id++
+        << ".png";
+
+        if (cv::imwrite(ss.str(), depth_up))
+        {
+            LOG(INFO) << "Saved depth map PNG to " << ss.str();
+        }
+        else
+        {
+            LOG(WARNING) << "Failed to write depth map PNG to " << ss.str();
+        }
+    }
+    catch (const std::exception &e)
+    {
+        LOG(WARNING) << "Exception while saving depth map PNG: " << e.what();
+    }
 }
+
 
 
 void MapperEMVS::getPointcloud(const cv::Mat& depth_map,

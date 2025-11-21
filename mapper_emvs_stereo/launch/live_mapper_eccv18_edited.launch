@@ -1,6 +1,6 @@
 <launch>
     <param name="num_ev_per_map" value="500000" />
-    <param name="on_demand" value="true" />    
+    <param name="on_demand" value="false" />    
     <param name="max_duration" value="2" />
     <param name="min_duration" value="0.1" />
     <param name="init_wait_time" value="1" />
