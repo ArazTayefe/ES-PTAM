@@ -57,6 +57,12 @@ RUN apt-get update && apt-get install -y \
     python2.7 \
     && rm -rf /var/lib/apt/lists/*
 
+RUN apt-get update && apt-get install -y \
+    ros-noetic-image-view \
+    ros-noetic-pcl-ros \
+ && rm -rf /var/lib/apt/lists/*
+
+
 RUN git clone --depth 1 https://gitlab.com/inivation/libcaer.git /tmp/libcaer && \
     cd /tmp/libcaer && \
     cmake -B build -S . -DCMAKE_BUILD_TYPE=Release && \
@@ -77,7 +83,7 @@ RUN mkdir -p /root/catkin_ws/src
 WORKDIR /root/catkin_ws/src
 COPY . /root/catkin_ws/src/ES-PTAM
 
-# Fix Windows CRLF line endings on Python scripts
+# Fix Windows CRLF line endings for Python scripts
 RUN apt-get update && apt-get install -y dos2unix && \
     find /root/catkin_ws/src/ES-PTAM -type f \( -name "*.py" -o -name "rqt_evo" \) -print0 | xargs -0 dos2unix
 
